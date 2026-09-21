@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?> rataalada</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        /* Efecto de pantalla antigua de tubo (CRT) */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .typing-text {
+            min-height: 80px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        .options-container {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: transparent;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 5px #00ff00;
+            box-shadow: 0 0 5px #00ff00 inset;
+        }
+
+        .option-btn:hover, .option-btn:active {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: #00ff00;
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        input[type="text"] {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.5rem;
+            width: 150px;
+            text-align: center;
+            outline: none;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        a {
+            color: #00ff00;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>&lt;?&gt;</h1>
+        <div id="output" class="typing-text"></div><span class="cursor" id="cursor"></span>
+        <div id="options" class="options-container"></div>
+        <div id="password-section" style="display: none; text-align: center; margin-top: 20px;">
+            <input type="text" id="final-pwd" maxlength="6" placeholder="______">
+            <br><br>
+            <button class="option-btn" onclick="checkPassword()">[ EJECUTAR_DESENCRIPTACIÓN ]</button>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN DE TU CARTA AQUÍ
+        const linkCarta = "https://docs.google.com/document/d/TU_ENLACE_AQUI/edit"; // <--- CAMBIA ESTO
+
+        const riddles = [
+            {
+                q: "Ella controla toda raíz en Gotham, pero cuando busca luz sin necesidad de veneno, sigue la sombra de un gigante dorado que siempre mira al cielo. ¿De qué flor hablo?",
+                options: ["[A] Orquídea negra", "[B] Girasol", "[C] Lirio de los valles"],
+                ans: 1, frag: "2"
+            },
+            {
+                q: "Jonathan Crane usa toxinas para nublar la mente, pero en la primavera de septiembre, esta pequeña campana dorada anuncia nuevos comienzos sin causar pánico. ¿Cuál es su nombre?",
+                options: ["[A] Narciso amarillo", "[B] Cicuta", "[C] Belladona"],
+                ans: 0, frag: "1"
+            },
+            {
+                q: "Dos caras tiene la moneda: una fría y gris como Arkham, otra cálida y brillante como una promesa de amor o amistad leal en los jardines de Wayne Manor. ¿Qué brote representa esta esperanza?",
+                options: ["[A] Rosa espinosa", "[B] Dalia oscura", "[C] Tulipán amarillo"],
+                ans: 2, frag: "0"
+            },
+            {
+                q: "Ra's al Ghul emerge de su Fosa con furia, pero las aguas tranquilas guardan una flor flotante de pétalos de oro que no busca venganza, sino serenidad. ¿Qué contemplas?",
+                options: ["[A] Helecho lunar", "[B] Loto amarillo", "[C] Cardo silvestre"],
+                ans: 1, frag: "9"
+            },
+            {
+                q: "En la solapa del Joker arroja ácido letal, pero el 21 de septiembre se viste de alegría y optimismo sincero, regalando pétalos dorados en lugar de caos. ¿Qué flor adorna el traje?",
+                options: ["[A] Violeta", "[B] Crisantemo amarillo", "[C] Margarita marchita"],
+                ans: 1, frag: "2"
+            },
+            {
+                q: "Una chispa en el cielo nublado llama al Murciélago; una pequeña margarita silvestre en el suelo anuncia que nunca estás sola en la oscuridad. ¿Cuál es el último faro?",
+                options: ["[A] Cardo de Gotham", "[B] Margarita amarilla", "[C] Magnolia blanca"],
+                ans: 1, frag: "6"
+            }
+        ];
+
+        let currentQuestion = 0;
+        const outputDiv = document.getElementById("output");
+        const optionsDiv = document.getElementById("options");
+        const pwdSection = document.getElementById("password-section");
+        let isTyping = false;
+
+        function checkTimeAccess() {
+            // NOTA: Para probarlo TÚ MISMO antes del día, comenta (pon //) en las próximas líneas
+            const now = new Date();
+            const date = now.getDate();
+            const month = now.getMonth() + 1; // Septiembre es 9
+            const hour = now.getHours();
+
+            // Bloqueo de fecha
+            if (month !== 9 || date !== 21) {
+                if (date < 21) return "[ACCESO DENEGADO - LA RESPUESTA FLORECE MAÑANA A LAS 18:00 HRS]";
+                if (date > 21) return "[TIEMPO AGOTADO - LOS ACERTIJOS SE HAN MARCHITADO]";
+            }
+            // Bloqueo de hora el día 21
+            if (hour < 18) return "[ACCESO DENEGADO - AÚN NO HAY LUZ SUFICIENTE. REGRESA A LAS 18:00 HRS]";
+            
+            return "ok";
+        }
+
+        function typeText(text, callback) {
+            if (isTyping) return;
+            isTyping = true;
+            outputDiv.innerHTML = "";
+            let i = 0;
+            optionsDiv.style.display = "none";
+            
+            let interval = setInterval(() => {
+                outputDiv.innerHTML += text.charAt(i);
+                i++;
+                if (i >= text.length) {
+                    clearInterval(interval);
+                    isTyping = false;
+                    if(callback) callback();
+                }
+            }, 40); // Velocidad de escritura
+        }
+
+        function showOptions() {
+            optionsDiv.innerHTML = "";
+            let r = riddles[currentQuestion];
+            r.options.forEach((opt, index) => {
+                let btn = document.createElement("button");
+                btn.className = "option-btn";
+                btn.innerText = opt;
+                btn.onclick = () => handleAnswer(index);
+                optionsDiv.appendChild(btn);
+            });
+            optionsDiv.style.display = "flex";
+        }
+
+        function handleAnswer(selectedIndex) {
+            if (selectedIndex === riddles[currentQuestion].ans) {
+                let frag = riddles[currentQuestion].frag;
+                typeText(`> RESPUESTA CORRECTA.\n> EXTRACCIÓN EXITOSA.\n> FRAGMENTO DE CONTRASEÑA: [ ${frag} ]\n\nPreparando siguiente acertijo...`, () => {
+                    setTimeout(() => {
+                        currentQuestion++;
+                        nextState();
+                    }, 3000);
+                });
+            } else {
+                typeText("> INCORRECTO.\n> BATMAN SE DECEPCIONARÍA.\n> INTÉNTALO DE NUEVO.", () => {
+                    setTimeout(() => {
+                        typeText(riddles[currentQuestion].q, showOptions);
+                    }, 2000);
+                });
+            }
+        }
+
+        function finalState() {
+            typeText("> HAS LLEGADO AL FINAL.\n> INGRESA LA CLAVE MAESTRA DE 6 DÍGITOS PARA DESBLOQUEAR EL ARCHIVO CONFIDENCIAL.", () => {
+                pwdSection.style.display = "block";
+            });
+        }
+
+        function checkPassword() {
+            const val = document.getElementById("final-pwd").value;
+            if (val === "210926") {
+                pwdSection.style.display = "none";
+                typeText("> ENCRIPTACIÓN ROTA.\n> FELIZ DÍA DE LAS FLORES AMARILLAS.\n> ACCEDIENDO A ARCHIVO...", () => {
+                    setTimeout(() => {
+                        outputDiv.innerHTML += `<br><br><a href="${linkCarta}" target="_blank">[ HAZ CLIC AQUÍ PARA LEER LA CARTA ]</a>`;
+                    }, 1000);
+                });
+            } else {
+                alert("CÓDIGO INVÁLIDO.");
+            }
+        }
+
+        function nextState() {
+            if (currentQuestion < riddles.length) {
+                typeText(`> ACERTIJO 0${currentQuestion + 1}:\n\n` + riddles[currentQuestion].q, showOptions);
+            } else {
+                finalState();
+            }
+        }
+
+        window.onload = () => {
+            let status = "ok";
+            // Para saltarte el bloqueo de tiempo y probar la página hoy, cambia la línea de arriba por:
+            // let status = "ok"; 
+            // let status = checkTimeAccess(); 
+            
+            if (status !== "ok") {
+                typeText(status);
+            } else {
+                typeText("> INICIANDO SISTEMA...\n> USUARIO DETECTADO.\n> ¿CREES SER LO SUFICIENTEMENTE LISTA?\n> DEMUÉSTRALO.", () => {
+                    setTimeout(nextState, 2000);
+                });
+            }
+        };
+    </script>
+</body>
+</html>
